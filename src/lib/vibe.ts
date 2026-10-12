@@ -8,8 +8,10 @@ export interface VibeLaunch {
   launchId: string;
   name: string;
   symbol: string;
-  pairSymbol: string;
+  metadataURI?: string;
+  pairCurrencyAddress?: string;
   pairIsNative: boolean;
+  pairSymbol: string;
   targetPairUnits: string;
   taxBps: number;
   weights: { cashBps: number; holdersBps: number; burnBps: number; holdersPairBps: number };
@@ -17,6 +19,8 @@ export interface VibeLaunch {
   graduated: boolean;
   curve: { tokensSoldGrossUnits: string; pairReserveUnits: string; transfersUnlocked: boolean };
   createdAt: string;
+  createdTransactionHash?: string;
+  createdBlock?: string;
   market: {
     complete: boolean;
     volume24hPairUnits: string;
@@ -30,13 +34,41 @@ export interface VibeLaunch {
   content?: { description?: string; image?: { uri?: string } };
 }
 
+export interface Candle {
+  bucketStart: string;
+  openPriceWeiPerToken: string | null;
+  highPriceWeiPerToken: string | null;
+  lowPriceWeiPerToken: string | null;
+  closePriceWeiPerToken: string | null;
+  volumeWei: string | null;
+}
+
+export interface FeeEvent {
+  source: string;
+  side: string;
+  actorAddress: string;
+  pairFeeUnits: string | null;
+  tokenFeeUnits: string | null;
+  rateBps: number | null;
+  grossTokenUnits?: string | null;
+  blockNumber?: string | null;
+  transactionHash?: string | null;
+  [k: string]: unknown;
+}
+
+export interface LaunchDetail {
+  launch: VibeLaunch;
+  feeEvents: FeeEvent[];
+  rewardFeeds: unknown[];
+  treasuryRotations: unknown[];
+}
+
 async function vibeFetch<T>(path: string, tries = 4): Promise<T> {
   let lastErr: unknown;
   for (let i = 0; i < tries; i++) {
     try {
       const res = await fetch(`${BASE}${path}`, {
         headers: { Accept: "application/json", "User-Agent": "vibescan/0.1" },
-        // next: no-store handled per-route via revalidate config
       });
       if (!res.ok) throw new Error(`upstream ${res.status}`);
       const json = (await res.json()) as { data: T };
@@ -56,6 +88,29 @@ export async function fetchLaunches(limit = 24, sort?: string): Promise<VibeLaun
     `/api/v1/chains/${CHAIN}/v6/launches?${qs}`
   );
   return d.items;
+}
+
+export async function fetchLaunchDetail(address: string): Promise<LaunchDetail> {
+  return vibeFetch<LaunchDetail>(
+    `/api/v1/chains/${CHAIN}/v6/launches/${address.toLowerCase()}`
+  );
+}
+
+export async function fetchCandles(
+  address: string,
+  interval = "1h"
+): Promise<{ items: Candle[] }> {
+  return vibeFetch<{ items: Candle[] }>(
+    `/api/v1/chains/${CHAIN}/v6/launches/${address.toLowerCase()}/candles?interval=${interval}`
+  );
+}
+
+export async function fetchActivity(
+  address: string
+): Promise<{ items: Record<string, unknown>[] }> {
+  return vibeFetch<{ items: Record<string, unknown>[] }>(
+    `/api/v1/chains/${CHAIN}/launches/${address.toLowerCase()}/activity`
+  );
 }
 
 export interface AnalyticsSummary {
@@ -85,9 +140,13 @@ export function gradProgress(l: VibeLaunch): number {
   return Number(pct > 10000n ? 10000n : pct) / 100;
 }
 
-export function fmtEth(wei: string | undefined, digits = 2): string {
+export function fmtEth(wei: string | undefined | null, digits = 2): string {
   if (!wei) return "0";
   const v = Number(BigInt(wei)) / 1e18;
   if (v >= 1000) return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
   return v.toLocaleString("en-US", { maximumFractionDigits: digits });
+}
+
+export function shortAddr(a: string): string {
+  return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }

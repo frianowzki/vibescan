@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { VibeLaunch } from "@/lib/vibe";
 import { fmtEth } from "@/lib/vibe";
 
-function shortAddr(a: string) {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
+const TABS = [
+  { key: "latest", label: "Latest" },
+  { key: "approaching", label: "Approaching graduation" },
+  { key: "graduated", label: "Graduated" },
+] as const;
 
-function fmtPair(wei: string) {
-  const v = Number(BigInt(wei || "0")) / 1e18;
-  return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
+type TabKey = (typeof TABS)[number]["key"];
 
 function progressPct(l: VibeLaunch) {
   const target = BigInt(l.targetPairUnits || "0");
@@ -47,10 +47,11 @@ export default function LaunchTable() {
   const [updated, setUpdated] = useState<Date | null>(null);
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<TabKey>("latest");
 
   const poll = useCallback(async () => {
     try {
-      const res = await fetch("/api/vibe/launches?limit=24", { cache: "no-store" });
+      const res = await fetch("/api/vibe/launches?limit=40", { cache: "no-store" });
       if (!res.ok) throw new Error(String(res.status));
       const json = await res.json();
       setItems(json.items ?? []);
@@ -76,6 +77,20 @@ export default function LaunchTable() {
       .catch(() => {});
   }, []);
 
+  const filtered = useMemo(() => {
+    if (tab === "graduated")
+      return items.filter((l) => l.graduated || l.lifecycle === "GRADUATED");
+    if (tab === "approaching")
+      return items
+        .filter((l) => !l.graduated && l.lifecycle !== "GRADUATED")
+        .filter((l) => {
+          const p = progressPct(l);
+          return p >= 3 && p < 100;
+        })
+        .sort((a, b) => progressPct(b) - progressPct(a));
+    return items;
+  }, [items, tab]);
+
   const stats = summary
     ? [
         { label: "tokens", value: summary.population.tokens.toLocaleString("en-US") },
@@ -100,10 +115,22 @@ export default function LaunchTable() {
         </dl>
       )}
 
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm uppercase tracking-[0.18em] text-[var(--fg-dim)]">
-          Latest launches
-        </h2>
+      <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+        <div className="flex gap-1">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`text-sm px-3 py-1.5 rounded-full transition-colors ${
+                tab === t.key
+                  ? "bg-[var(--accent-dim)] text-[var(--accent)]"
+                  : "text-[var(--fg-dim)] hover:text-[var(--fg)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <span className="mono text-xs text-[var(--fg-faint)]">
           {failed ? (
             <span className="text-[var(--warn)]">upstream flaky — retrying…</span>
@@ -123,27 +150,25 @@ export default function LaunchTable() {
               <th className="py-2 pr-3 font-medium">Curve progress</th>
               <th className="py-2 pr-3 font-medium text-right">Raised</th>
               <th className="py-2 pr-3 font-medium text-right">Tax</th>
-              <th className="py-2 pr-3 font-medium text-right">24h vol</th>
               <th className="py-2 pr-3 font-medium text-right">Holders</th>
               <th className="py-2 pr-3 font-medium">Status</th>
               <th className="py-2 font-medium text-right">Age</th>
             </tr>
           </thead>
           <tbody>
-            {items.map((l) => {
+            {filtered.map((l) => {
               const pct = progressPct(l);
               return (
                 <tr
                   key={l.tokenAddress}
-                  className="border-b border-[var(--line)] hover:bg-[var(--bg-hover)] transition-colors"
+                  className="border-b border-[var(--line)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                  onClick={() => (window.location.href = `/t/${l.tokenAddress}`)}
                 >
                   <td className="py-2.5 pr-3">
                     <div className="font-medium">{l.name}</div>
-                    <div className="mono text-xs text-[var(--fg-faint)]">
-                      {l.symbol} · {shortAddr(l.tokenAddress)}
-                    </div>
+                    <div className="mono text-xs text-[var(--fg-faint)]">{l.symbol}</div>
                   </td>
-                  <td className="py-2.5 pr-3 min-w-[140px]">
+                  <td className="py-2.5 pr-3 min-w-[150px]">
                     <div className="h-1.5 w-full rounded-full bg-[var(--bg-hover)] overflow-hidden">
                       <div
                         className="h-full rounded-full"
@@ -158,14 +183,12 @@ export default function LaunchTable() {
                     </div>
                   </td>
                   <td className="py-2.5 pr-3 text-right mono">
-                    {fmtPair(l.curve?.pairReserveUnits)} / {fmtPair(l.targetPairUnits)}{" "}
+                    {(Number(BigInt(l.curve?.pairReserveUnits || "0")) / 1e18).toFixed(2)} /{" "}
+                    {(Number(BigInt(l.targetPairUnits || "0")) / 1e18).toFixed(0)}{" "}
                     {l.pairSymbol}
                   </td>
                   <td className="py-2.5 pr-3 text-right mono">
                     {(l.taxBps / 100).toFixed(1)}%
-                  </td>
-                  <td className="py-2.5 pr-3 text-right mono">
-                    {fmtPair(l.market?.volume24hPairUnits)}
                   </td>
                   <td className="py-2.5 pr-3 text-right mono">{l.market?.holderCount ?? 0}</td>
                   <td className="py-2.5 pr-3 text-xs">{lifecycleTag(l)}</td>
@@ -180,9 +203,13 @@ export default function LaunchTable() {
       </div>
 
       {loading && <p className="text-sm text-[var(--fg-dim)] py-8">Loading launches…</p>}
-      {!loading && items.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <p className="text-sm text-[var(--fg-dim)] py-8">
-          {failed ? "Upstream unavailable — will retry automatically." : "No launches returned."}
+          {failed
+            ? "Upstream unavailable — will retry automatically."
+            : tab === "approaching"
+              ? "No launches in the 3–99% graduation window right now."
+              : "No launches returned."}
         </p>
       )}
     </div>
