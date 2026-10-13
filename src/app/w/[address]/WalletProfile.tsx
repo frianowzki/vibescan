@@ -107,6 +107,14 @@ export default function WalletProfile({ params }: { params: Promise<{ address: s
         >
           explorer ↗
         </a>
+        <a
+          href={`/w/${address}/card`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[var(--fg-dim)] hover:text-[var(--fg)] underline underline-offset-2"
+        >
+          report card ↗
+        </a>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">

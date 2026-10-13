@@ -1,6 +1,15 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { PageMain, SiteHeader } from "@/components/Shell";
 import WalletProfile from "./WalletProfile";
+
+export const metadata: Metadata = {
+  title: "wallet · vibescan",
+  openGraph: {
+    title: "vibescan wallet report card",
+    images: ["/og/wallet.png"],
+  },
+};
 
 function Skeleton() {
   return (

@@ -6,6 +6,7 @@ const NAV = [
   { href: "/buybacks", label: "Buybacks" },
   { href: "/builders", label: "Builders" },
   { href: "/guilds", label: "Guilds" },
+  { href: "/pairs", label: "Pairs" },
 ];
 
 export function SiteHeader({ active }: { active?: string }) {

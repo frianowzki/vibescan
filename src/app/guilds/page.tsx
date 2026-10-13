@@ -1,10 +1,14 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { PageMain, SiteHeader } from "@/components/Shell";
 import { fetchGuilds, fmtEth, shortAddr, type Guild } from "@/lib/vibe";
 
 function GuildCard({ g }: { g: Guild }) {
   return (
-    <div className="border border-[var(--line)] rounded-lg p-4 flex flex-col gap-2 bg-[var(--bg-raised)]">
+    <Link
+      href={`/guilds/${g.slug}`}
+      className="border border-[var(--line)] rounded-lg p-4 flex flex-col gap-2 bg-[var(--bg-raised)] hover:border-[var(--accent)] transition-colors"
+    >
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-bold tracking-tight">{g.name}</h3>
         <span className="text-[11px] uppercase tracking-widest text-[var(--fg-faint)]">
@@ -36,7 +40,7 @@ function GuildCard({ g }: { g: Guild }) {
           </a>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 

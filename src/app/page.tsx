@@ -20,6 +20,7 @@ export default function Home() {
           <a href="/buybacks" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Buybacks &amp; burns ↗</a>
           <a href="/builders" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Builders ↗</a>
           <a href="/guilds" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Guilds ↗</a>
+          <a href="/pairs" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Pairs ↗</a>
         </nav>
 
         <nav className="mt-auto flex gap-4 text-xs text-[var(--fg-dim)]">

@@ -282,9 +282,28 @@ export interface Guild {
   contactXUsername?: string;
   admissionPolicy: string;
   memberCount: string;
-  metrics: { tradingVolumeWei?: string | null };
+  metrics: {
+    tradingVolumeWei?: string | null;
+    traderReferrals?: string | null;
+    traderReferralVolumeWei?: string | null;
+    projectReferrals?: string | null;
+    projectReferralVolumeWei?: string | null;
+    totalPnlWei?: string | null;
+  };
 }
 
 export async function fetchGuilds(offset = 0, limit = 24): Promise<{ items: Guild[]; nextOffset: number | null }> {
   return vibeFetch(`/api/v1/chains/${CHAIN}/guilds?limit=${limit}&offset=${offset}`);
+}
+
+export interface GuildMember {
+  address: string;
+  role: string;
+  joinedAt: string;
+}
+
+export async function fetchGuildMembers(slug: string, limit = 100): Promise<{ items: GuildMember[] }> {
+  return vibeFetch<{ items: GuildMember[] }>(
+    `/api/v1/chains/${CHAIN}/guilds/${slug}/members?limit=${limit}`
+  );
 }
