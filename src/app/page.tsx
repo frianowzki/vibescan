@@ -16,6 +16,7 @@ export default function Home() {
         </div>
 
         <nav className="flex flex-col gap-2 text-xs">
+          <a href="/traders" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Top traders ↗</a>
           <a href="/buybacks" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Buybacks &amp; burns ↗</a>
           <a href="/builders" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Builders ↗</a>
           <a href="/guilds" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Guilds ↗</a>

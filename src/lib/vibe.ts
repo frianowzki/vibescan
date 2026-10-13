@@ -250,6 +250,28 @@ export async function fetchBuilders(
   return vibeFetch(`/api/v1/chains/${CHAIN}/${path}?limit=${limit}`);
 }
 
+// ---------- Top traders ----------
+
+export interface TraderRow {
+  address: string;
+  coverage: string;
+  coverageReason: string | null;
+  realizedPnlWei: string;
+  unrealizedPnlWei: string;
+  pnlWei: string;
+  equityWei: string;
+  buyCount: number;
+  sellCount: number;
+  tokensTraded: number;
+  openPositions: number;
+}
+
+export async function fetchTopTraders(): Promise<{ items: TraderRow[] }> {
+  return vibeFetch<{ items: TraderRow[] }>(
+    `/api/v1/chains/${CHAIN}/analytics/traders`
+  );
+}
+
 // ---------- Guilds ----------
 
 export interface Guild {

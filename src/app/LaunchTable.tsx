@@ -6,10 +6,29 @@ import type { VibeLaunch } from "@/lib/vibe";
 import { fmtEth } from "@/lib/vibe";
 
 const TABS = [
+  { key: "starred", label: "★ Starred" },
   { key: "latest", label: "Latest" },
   { key: "approaching", label: "Approaching graduation" },
   { key: "graduated", label: "Graduated" },
 ] as const;
+
+const STAR_KEY = "vibescan:starred";
+
+function loadStarred(): string[] {
+  try {
+    const raw = localStorage.getItem(STAR_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStarred(list: string[]) {
+  try {
+    localStorage.setItem(STAR_KEY, JSON.stringify(list));
+  } catch {}
+}
 
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -48,6 +67,19 @@ export default function LaunchTable() {
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("latest");
+  const [starred, setStarred] = useState<string[]>([]);
+
+  useEffect(() => {
+    setStarred(loadStarred());
+  }, []);
+
+  const toggleStar = useCallback((addr: string) => {
+    setStarred((prev) => {
+      const next = prev.includes(addr) ? prev.filter((a) => a !== addr) : [...prev, addr];
+      saveStarred(next);
+      return next;
+    });
+  }, []);
 
   const poll = useCallback(async () => {
     try {
@@ -78,6 +110,7 @@ export default function LaunchTable() {
   }, []);
 
   const filtered = useMemo(() => {
+    if (tab === "starred") return items.filter((l) => starred.includes(l.tokenAddress));
     if (tab === "graduated")
       return items.filter((l) => l.graduated || l.lifecycle === "GRADUATED");
     if (tab === "approaching")
@@ -146,6 +179,7 @@ export default function LaunchTable() {
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wider text-[var(--fg-faint)] border-b border-[var(--line)]">
+              <th className="py-2 pr-3 font-medium w-8"><span className="sr-only">Star</span></th>
               <th className="py-2 pr-3 font-medium">Token</th>
               <th className="py-2 pr-3 font-medium">Curve progress</th>
               <th className="py-2 pr-3 font-medium text-right">Raised</th>
@@ -161,10 +195,28 @@ export default function LaunchTable() {
               return (
                 <tr
                   key={l.tokenAddress}
-                  className="border-b border-[var(--line)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                  onClick={() => (window.location.href = `/t/${l.tokenAddress}`)}
+                  className="border-b border-[var(--line)] hover:bg-[var(--bg-hover)] transition-colors"
                 >
                   <td className="py-2.5 pr-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStar(l.tokenAddress);
+                      }}
+                      aria-label={starred.includes(l.tokenAddress) ? "Unstar" : "Star"}
+                      className={`text-sm transition-colors ${
+                        starred.includes(l.tokenAddress)
+                          ? "text-[var(--accent)]"
+                          : "text-[var(--fg-faint)] hover:text-[var(--fg-dim)]"
+                      }`}
+                    >
+                      {starred.includes(l.tokenAddress) ? "★" : "☆"}
+                    </button>
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 cursor-pointer"
+                    onClick={() => (window.location.href = `/t/${l.tokenAddress}`)}
+                  >
                     <div className="font-medium">{l.name}</div>
                     <div className="mono text-xs text-[var(--fg-faint)]">{l.symbol}</div>
                   </td>
@@ -209,7 +261,9 @@ export default function LaunchTable() {
             ? "Upstream unavailable — will retry automatically."
             : tab === "approaching"
               ? "No launches in the 3–99% graduation window right now."
-              : "No launches returned."}
+              : tab === "starred"
+                ? "No starred tokens yet — tap ☆ on any launch to track it here."
+                : "No launches returned."}
         </p>
       )}
     </div>
