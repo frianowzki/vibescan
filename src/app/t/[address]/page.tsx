@@ -1,7 +1,36 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import TokenDetail from "./TokenDetail";
 import { fetchLaunchDetail } from "@/lib/vibe";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ address: string }>;
+}): Promise<Metadata> {
+  const { address } = await params;
+  try {
+    const { launch } = await fetchLaunchDetail(address);
+    const pct = (() => {
+      const target = BigInt(launch.targetPairUnits || "0");
+      const raised = BigInt(launch.curve?.pairReserveUnits || "0");
+      return target ? Number((raised * 10000n) / target) / 100 : 0;
+    })();
+    const title = `${launch.name} (${launch.symbol}) · vibescan`;
+    const desc = `vibe/vibe testnet launch — ${pct.toFixed(1)}% to graduation · tax ${launch.taxBps / 100}% · pair ${launch.pairSymbol} · Unofficial scanner`;
+    return {
+      title,
+      description: desc,
+      openGraph: {
+        title,
+        description: desc,
+      },
+    };
+  } catch {
+    return { title: "token · vibescan" };
+  }
+}
 
 function TokenSkeleton() {
   return (

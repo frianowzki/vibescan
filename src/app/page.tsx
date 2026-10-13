@@ -15,6 +15,12 @@ export default function Home() {
           </p>
         </div>
 
+        <nav className="flex flex-col gap-2 text-xs">
+          <a href="/buybacks" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Buybacks &amp; burns ↗</a>
+          <a href="/builders" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Builders ↗</a>
+          <a href="/guilds" className="text-[var(--fg-dim)] hover:text-[var(--fg)] transition-colors">Guilds ↗</a>
+        </nav>
+
         <nav className="mt-auto flex gap-4 text-xs text-[var(--fg-dim)]">
           <a
             href="https://testnet.vibevibe.fun"

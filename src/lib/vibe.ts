@@ -150,3 +150,119 @@ export function fmtEth(wei: string | undefined | null, digits = 2): string {
 export function shortAddr(a: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
+
+// ---------- Wallets ----------
+
+export interface WalletPerformance {
+  coverage: string;
+  coverageReason: string | null;
+  realizedPnlWei: string;
+  accountedTrades: number;
+  windows: {
+    coverage: string;
+    items: {
+      window: string;
+      buyVolumeWei: string;
+      sellVolumeWei: string;
+      buyCount: number;
+      sellCount: number;
+      scoredCloses: number;
+      winningCloses: number;
+      realizedWei: string;
+    }[];
+  };
+}
+
+export async function fetchWalletPerformance(address: string): Promise<WalletPerformance> {
+  return vibeFetch<WalletPerformance>(
+    `/api/v1/chains/${CHAIN}/wallets/${address.toLowerCase()}/performance`
+  );
+}
+
+export interface WalletPosition {
+  tokenAddress: string;
+  name: string;
+  symbol: string;
+  balanceBaseUnits: string;
+  currentPriceWeiPerToken: string | null;
+  estimatedValueWei: string | null;
+  coverage: string;
+  coverageReason?: string | null;
+}
+
+export async function fetchWalletPositions(address: string): Promise<WalletPosition[]> {
+  const d = await vibeFetch<{ items: WalletPosition[] }>(
+    `/api/v1/chains/${CHAIN}/wallets/${address.toLowerCase()}/positions`
+  );
+  return d.items;
+}
+
+// ---------- Buybacks ----------
+
+export interface BuybackSummary {
+  launchExecutionCount: number;
+  protocolExecutionCount: number;
+  totalExecutionCount: number;
+  sfund: {
+    status: string;
+    ethSpentWei: string;
+    tokensBurnedBaseUnits: string;
+    executionCount: number;
+    lastBurnAt: string;
+  };
+  items: {
+    tokenAddress: string;
+    ethSpentWei: string;
+    tokensBurnedBaseUnits: string;
+    executionCount: number;
+    lastBurnAt: string;
+    lastBurnTxHash: string;
+  }[];
+}
+
+export async function fetchBuybackSummary(): Promise<BuybackSummary> {
+  return vibeFetch<BuybackSummary>(`/api/v1/chains/${CHAIN}/buybacks/summary`);
+}
+
+// ---------- Builders / Season ----------
+
+export interface BuilderRow {
+  creatorAddress: string;
+  rank: number;
+  launchCount: number;
+  firstLaunchAt: string;
+  latestLaunchAt: string;
+  pace: { score: number; label: string };
+  bestCurrent: {
+    tokenAddress: string;
+    name: string;
+    symbol: string;
+    lifecycle: string;
+    marketCapWei?: string;
+  } | null;
+}
+
+export async function fetchBuilders(
+  season = false,
+  limit = 25
+): Promise<{ boardStatus: string; items: BuilderRow[]; scope?: Record<string, unknown> }> {
+  const path = season ? "season/builders" : "builders";
+  return vibeFetch(`/api/v1/chains/${CHAIN}/${path}?limit=${limit}`);
+}
+
+// ---------- Guilds ----------
+
+export interface Guild {
+  slug: string;
+  name: string;
+  ethos: string;
+  founderAddress: string;
+  contactXUsername?: string;
+  admissionPolicy: string;
+  memberCount: string;
+  metrics: { tradingVolumeWei?: string | null };
+}
+
+export async function fetchGuilds(offset = 0, limit = 24): Promise<{ items: Guild[]; nextOffset: number | null }> {
+  return vibeFetch(`/api/v1/chains/${CHAIN}/guilds?limit=${limit}&offset=${offset}`);
+}

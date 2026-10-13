@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { LaunchDetail, Candle, FeeEvent } from "@/lib/vibe";
 import { fmtEth, shortAddr } from "@/lib/vibe";
 import Sparkline from "../../Sparkline";
@@ -233,7 +234,9 @@ export default function TokenDetail({ detail }: { detail: LaunchDetail }) {
                   <span className={f.side === "BUY" ? "text-[var(--good)]" : "text-[var(--bad)]"}>
                     {f.side} · {f.source?.replace("CURVE_", "")?.toLowerCase()}
                   </span>
-                  <span className="mono text-[var(--fg-dim)]">{shortAddr(f.actorAddress ?? "")}</span>
+                  <Link href={`/w/${f.actorAddress ?? ""}`} className="font-mono text-[var(--fg-dim)] hover:text-[var(--accent)] transition-colors">
+                    {shortAddr(f.actorAddress ?? "")}
+                  </Link>
                   <span className="mono">
                     {f.pairFeeUnits ? `${fmtEth(f.pairFeeUnits, 3)} ${l.pairSymbol}` : "—"}
                   </span>
